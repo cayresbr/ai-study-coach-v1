@@ -203,13 +203,8 @@
         <h2>Gerar treino</h2>
         <div class="row">
           <div>
-            <label for="questionCount">Perguntas</label>
-            <select id="questionCount">
-              <option value="5">5</option>
-              <option value="10" selected>10</option>
-              <option value="15">15</option>
-            </select>
-          </div>
+            <label>Perguntas por quiz</label>
+            <div class="stat"><strong>10</strong><span class="muted">questões</span></div>
           <div>
             <label for="difficulty">Dificuldade</label>
             <select id="difficulty">
@@ -221,13 +216,13 @@
         </div>
         <div style="height:12px"></div>
         <button id="generateQuiz">Gerar perguntas</button>
-        <p class="muted" style="margin-bottom:0">A V1 limita as perguntas ao conteúdo já concluído.</p>
+        <p class="muted" style="margin-bottom:0">Sempre gera 10 questões e usa somente assuntos das aulas já concluídas.</p>
       </div>
     </section>
 
     <section class="card">
       <h2>Player das aulas</h2>
-      <p class="muted">Assista à playlist sem sair do Study Coach. Selecione a aula abaixo; o player abrirá a playlist a partir dela.</p>
+      <p class="muted">Assista à playlist sem sair do Study Coach. Ao terminar uma aula, a próxima ficará preparada, mas só começará quando você der play.</p>
       <div class="player-meta">
         <div>
           <label for="playerLesson">Aula para assistir</label>
@@ -238,12 +233,7 @@
         </div>
       </div>
       <div class="video-wrap">
-        <iframe id="lessonPlayer"
-          title="Curso de Node.js — playlist"
-          src="https://www.youtube.com/embed/videoseries?list=PLJ_KhUnlXUPtbtLwaxxUxHqvcNQndmI4B&index=1"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          referrerpolicy="strict-origin-when-cross-origin"
-          allowfullscreen></iframe>
+        <div id="lessonPlayer"></div>
       </div>
       <p class="muted" id="playerTopic" style="margin-bottom:0"></p>
     </section>
@@ -255,13 +245,17 @@
       </div>
 
       <div class="card">
-        <h2>Mentor local</h2>
-        <div class="chat-log" id="chatLog">
-          <div class="msg bot"><strong>Mentor:</strong> Diga algo como “terminei a aula 8”, “quero revisar Express” ou “faça um quiz difícil”. Nesta V1 eu interpreto comandos simples localmente.</div>
+        <h2>Mentor — ações rápidas</h2>
+        <p class="muted">Nesta versão removemos o chat limitado. Escolha diretamente o que você precisa:</p>
+        <div class="row">
+          <button class="secondary" id="mentorQuiz">Gerar quiz de 10 questões</button>
+          <button class="ghost" id="mentorReview">O que devo revisar?</button>
+          <button class="ghost" id="mentorCurrent">Mostrar conteúdo liberado</button>
+          <button class="ghost" id="mentorReset">Reiniciar melhor nota</button>
         </div>
-        <textarea id="chatInput" placeholder="Ex.: Terminei a aula 12 e quero revisar banco de dados"></textarea>
-        <div style="height:10px"></div>
-        <button class="secondary" id="sendChat">Enviar</button>
+        <div class="chat-log" id="chatLog" style="margin-top:12px">
+          <div class="msg bot"><strong>Mentor:</strong> Os quizzes agora respeitam a ordem real das aulas. Um assunto só entra depois da aula em que ele aparece.</div>
+        </div>
       </div>
     </section>
 
@@ -300,6 +294,8 @@
 
   <script>
     const TOTAL_LESSONS = 63;
+    const lessonTitles = ["O que é Node.JS", "Como Instalar o Node.js", "Node na prática", "Módulos", "Protocolo HTTP", "Introdução ao Express", "Rotas", "Parâmetros", "Nodemon", "Exibindo HTML", "Instalando o MySQL", "Como criar tabelas no MySQL", "Manipulando o MySQL", "Deletando registros no MySQL", "Atualizando registros no MySQL", "Sequelize", "Como se conectar ao MySQL", "Models no Sequelize", "Handlebars", "Como criar um formulário", "Como enviar dados do formulário", "Body parser", "Estruturando banco de dados", "Pegando dados do formulário", "Listando dados do banco", "Deletando posts", "Introdução ao MongoDB", "Como instalar o MongoDB", "Iniciando com Mongoose", "Trabalhando com o Mongoose", "Iniciando projeto Express.js", "Grupo de rotas no Express.js", "Arquivos estáticos", "Formulário de categorias", "Definindo o model de categorias", "Cadastrando categorias no banco de dados", "O que são sessões e cookies", "Middlewares", "Como configurar sessões", "Como validar formulários no Express.js", "Listando categorias", "Editando categoria", "Deletando categorias", "Definindo model de postagens", "Formulário de postagens", "Salvando postagens no banco de dados", "Listando postagens", "Editando postagens", "Deletando postagens", "Criando home page", "Página de postagem", "Listagem de categorias", "Definindo model de usuário", "Registro de usuários", "Fazendo correção", "Cadastrando usuários no banco de dados", "Formulário de login", "Configurando o Passport", "Finalizando autenticação", "Controlando acesso", "Logout", "Deploy na Heroku - Parte 1", "Deploy na Heroku - Parte 2"];
+    function lessonTitle(n) { return lessonTitles[n-1] || topicForLesson(n); }
 
     const lessonTopics = [
       [1,5,"Node.js, módulos e HTTP"],
@@ -317,7 +313,18 @@
 
     const questionBank = [
       {min:1, topic:"Node", q:"O que é Node.js?", a:["Uma linguagem de programação","Um runtime JavaScript fora do navegador","Um banco de dados","Um framework CSS"], c:1, why:"Node.js é um ambiente de execução JavaScript baseado no motor V8."},
-      {min:1, topic:"Node", q:"Qual comando executa um arquivo app.js no Node?", a:["npm app.js","node app.js","js app.js","run app.js"], c:1, why:"O executável node recebe o arquivo JavaScript como argumento."},
+      {min:2, topic:"Instalação", q:"Qual é o foco principal da aula 2?", a:["Instalar o Node.js","Criar rotas Express","Configurar MongoDB","Fazer deploy"], c:0, why:"A aula 2 da playlist é Como Instalar o Node.js."},
+      {min:2, topic:"Instalação", q:"Por que instalar o Node.js antes das aulas práticas?", a:["Para ter o ambiente de execução JavaScript disponível no computador","Para substituir o navegador","Para instalar automaticamente o MySQL","Para transformar JavaScript em CSS"], c:0, why:"A instalação prepara o ambiente necessário para executar Node.js localmente."},
+      {min:3, topic:"Node na prática", q:"Na prática com Node.js, qual comando executa um arquivo app.js?", a:["npm app.js","node app.js","js app.js","run app.js"], c:1, why:"Esse uso prático do executável node entra na aula 3, Node na prática."},
+
+      {min:1, topic:"Node", q:"Node.js deve ser classificado como o quê?", a:["Plataforma/runtime para JavaScript","Linguagem diferente de JavaScript","Banco de dados","Framework de CSS"], c:0, why:"A primeira aula apresenta Node.js como plataforma/runtime que executa JavaScript fora do navegador."},
+      {min:1, topic:"Node", q:"Qual linguagem é executada pelo Node.js?", a:["JavaScript","PHP","Java","Python"], c:0, why:"O curso introduz Node.js como uma plataforma para executar JavaScript."},
+      {min:1, topic:"Node", q:"O Node.js permite executar JavaScript principalmente em qual contexto além do navegador?", a:["No lado do servidor","Somente dentro do HTML","Somente em CSS","Apenas em planilhas"], c:0, why:"A aula 1 destaca a execução de JavaScript no lado do servidor, fora dos navegadores."},
+      {min:1, topic:"Node", q:"Qual afirmação sobre Node.js está de acordo com a aula 1?", a:["Não é uma linguagem de programação","É uma nova linguagem derivada de Java","É um banco relacional","É uma biblioteca de estilos"], c:0, why:"A introdução diferencia Node.js de uma linguagem de programação."},
+      {min:1, topic:"Node", q:"Antes do Node.js, o JavaScript era associado principalmente a qual ambiente?", a:["Navegadores","MySQL","Sistemas operacionais móveis","Editores de imagem"], c:0, why:"A comparação da aula parte do uso tradicional de JavaScript nos navegadores e mostra sua execução fora deles com Node.js."},
+      {min:1, topic:"Node", q:"Qual cenário representa o uso apresentado para Node.js na aula inicial?", a:["Executar JavaScript no backend","Estilizar uma página com CSS","Criar tabelas diretamente no MySQL","Editar imagens no navegador"], c:0, why:"A aula inicial apresenta Node.js para executar JavaScript no lado do servidor/backend."},
+      {min:1, topic:"Node", q:"Qual alternativa NÃO descreve Node.js segundo a introdução do curso?", a:["Banco de dados","Plataforma de execução JavaScript","Tecnologia para JavaScript fora do navegador","Tecnologia usada no lado do servidor"], c:0, why:"Node.js não é apresentado como banco de dados."},
+      {min:1, topic:"Node", q:"Ao aprender Node.js neste curso, qual ecossistema de linguagem continua sendo usado?", a:["JavaScript","C#","Ruby","Kotlin"], c:0, why:"Node.js permite usar JavaScript também no backend."},
       {min:3, topic:"Módulos", q:"Qual benefício principal dos módulos?", a:["Eliminar HTTP","Reutilizar e organizar funcionalidades","Criar banco automaticamente","Substituir funções"], c:1, why:"Módulos ajudam a separar responsabilidades e reutilizar código."},
       {min:5, topic:"HTTP", q:"Qual método HTTP é normalmente usado para buscar um recurso?", a:["GET","POST","DELETE","PATCH"], c:0, why:"GET é o método semântico padrão para leitura de recursos."},
       {min:6, topic:"Express", q:"Qual é a função principal do Express?", a:["Criar CSS","Facilitar servidores e APIs HTTP com Node","Compilar TypeScript","Substituir JavaScript"], c:1, why:"Express fornece roteamento, middleware e utilidades HTTP sobre Node."},
@@ -351,14 +358,12 @@
       completedLessons: document.getElementById('completedLessons'),
       bestScore: document.getElementById('bestScore'),
       lessonList: document.getElementById('lessonList'),
-      questionCount: document.getElementById('questionCount'),
       difficulty: document.getElementById('difficulty'),
       quizArea: document.getElementById('quizArea'),
       quizActions: document.getElementById('quizActions'),
       chatLog: document.getElementById('chatLog'),
       chatInput: document.getElementById('chatInput'),
       playerLesson: document.getElementById('playerLesson'),
-      lessonPlayer: document.getElementById('lessonPlayer'),
       playerTopic: document.getElementById('playerTopic')
     };
 
@@ -369,26 +374,99 @@
       return hit ? hit[2] : 'Conteúdo do curso';
     }
 
+    let youtubePlayer = null;
+    let playerReady = false;
+    let currentPlayerLesson = 1;
+
     function initPlayer() {
       els.playerLesson.innerHTML = '';
       for (let i = 1; i <= TOTAL_LESSONS; i++) {
         const option = document.createElement('option');
         option.value = i;
-        option.textContent = `Aula ${i} — ${topicForLesson(i)}`;
+        option.textContent = `Aula ${i} — ${lessonTitle(i)}`;
         els.playerLesson.appendChild(option);
       }
       const saved = Number(localStorage.getItem('currentPlayerLesson') || localStorage.getItem('lastLesson') || 1);
-      els.playerLesson.value = String(Math.max(1, Math.min(TOTAL_LESSONS, saved || 1)));
-      updatePlayer();
+      currentPlayerLesson = Math.max(1, Math.min(TOTAL_LESSONS, saved || 1));
+      els.playerLesson.value = String(currentPlayerLesson);
+      updatePlayerLabels(currentPlayerLesson);
+
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(tag);
     }
+
+    function updatePlayerLabels(n) {
+      currentPlayerLesson = n;
+      els.playerLesson.value = String(n);
+      localStorage.setItem('currentPlayerLesson', n);
+      els.playerTopic.textContent = `Aula ${n} • ${topicForLesson(n)}`;
+    }
+
+    window.onYouTubeIframeAPIReady = function() {
+      youtubePlayer = new YT.Player('lessonPlayer', {
+        width: '100%',
+        height: '100%',
+        playerVars: {
+          listType: 'playlist',
+          list: 'PLJ_KhUnlXUPtbtLwaxxUxHqvcNQndmI4B',
+          index: currentPlayerLesson - 1,
+          autoplay: 0,
+          rel: 0
+        },
+        events: {
+          onReady: function(event) {
+            playerReady = true;
+            // Deixa a aula selecionada pronta, mas não inicia automaticamente.
+            event.target.cuePlaylist({
+              listType: 'playlist',
+              list: 'PLJ_KhUnlXUPtbtLwaxxUxHqvcNQndmI4B',
+              index: currentPlayerLesson - 1
+            });
+          },
+          onStateChange: handlePlayerStateChange
+        }
+      });
+    };
 
     function updatePlayer() {
       const n = Number(els.playerLesson.value) || 1;
-      localStorage.setItem('currentPlayerLesson', n);
-      // YouTube playlist index is zero-based in embed URLs.
-      const index = Math.max(0, n - 1);
-      els.lessonPlayer.src = `https://www.youtube.com/embed/videoseries?list=PLJ_KhUnlXUPtbtLwaxxUxHqvcNQndmI4B&index=${index}`;
-      els.playerTopic.textContent = `Aula ${n} • ${topicForLesson(n)}`;
+      updatePlayerLabels(n);
+      if (playerReady && youtubePlayer) {
+        // cuePlaylist troca a aula sem dar play automaticamente.
+        youtubePlayer.cuePlaylist({
+          listType: 'playlist',
+          list: 'PLJ_KhUnlXUPtbtLwaxxUxHqvcNQndmI4B',
+          index: n - 1
+        });
+      }
+    }
+
+    function handlePlayerStateChange(event) {
+      if (event.data !== YT.PlayerState.ENDED) return;
+
+      const finishedLesson = currentPlayerLesson;
+      const currentDone = Number(els.lastLesson.value) || 0;
+
+      // Ao terminar de assistir, registra automaticamente a aula concluída.
+      if (finishedLesson > currentDone) {
+        els.lastLesson.value = String(finishedLesson);
+        updateProgress();
+      }
+
+      // Prepara a próxima aula, sincroniza os campos e NÃO inicia o vídeo.
+      if (finishedLesson < TOTAL_LESSONS) {
+        const nextLesson = finishedLesson + 1;
+        updatePlayerLabels(nextLesson);
+        youtubePlayer.cuePlaylist({
+          listType: 'playlist',
+          list: 'PLJ_KhUnlXUPtbtLwaxxUxHqvcNQndmI4B',
+          index: nextLesson - 1
+        });
+        addBotMessage(`Aula ${finishedLesson} concluída. A aula ${nextLesson} está pronta; dê play quando quiser continuar.`);
+      } else {
+        addBotMessage('Parabéns! Você concluiu a última aula da playlist.');
+      }
     }
 
     function markCurrentLessonWatched() {
@@ -404,7 +482,7 @@
       for (let i = 1; i <= TOTAL_LESSONS; i++) {
         const option = document.createElement('option');
         option.value = i;
-        option.textContent = `Aula ${i} — ${topicForLesson(i)}`;
+        option.textContent = `Aula ${i} — ${lessonTitle(i)}`;
         els.lastLesson.appendChild(option);
       }
       els.lastLesson.value = localStorage.getItem('lastLesson') || '0';
@@ -416,7 +494,7 @@
       for (let i = 1; i <= TOTAL_LESSONS; i++) {
         const item = document.createElement('div');
         item.className = 'lesson' + (i <= done ? ' done' : '');
-        item.innerHTML = `<span>${i}</span><span>${topicForLesson(i)}</span>`;
+        item.innerHTML = `<span>${i}</span><span>${lessonTitle(i)}</span>`;
         els.lessonList.appendChild(item);
       }
     }
@@ -438,7 +516,7 @@
 
     function generateQuiz() {
       const last = Number(els.lastLesson.value);
-      const count = Number(els.questionCount.value);
+      const count = 10;
       let available = questionBank.filter(q => q.min <= last);
       if (!available.length) {
         els.quizArea.innerHTML = '<p class="muted">Conclua pelo menos a aula 1 para liberar perguntas.</p>';
@@ -545,17 +623,13 @@
 
     document.getElementById('generateQuiz').addEventListener('click', generateQuiz);
     document.getElementById('submitQuiz').addEventListener('click', submitQuiz);
-    document.getElementById('sendChat').addEventListener('click', handleChat);
+    document.getElementById('mentorQuiz').addEventListener('click', () => { generateQuiz(); addBotMessage('Quiz gerado: 10 questões somente sobre conteúdo liberado até a aula concluída.'); document.getElementById('quizArea').scrollIntoView({behavior:'smooth'}); });
+    document.getElementById('mentorReview').addEventListener('click', () => { const n=Number(els.lastLesson.value); addBotMessage(n ? `Revise primeiro a Aula ${n}: ${lessonTitle(n)}. Depois refaça o quiz e leia as explicações das respostas erradas.` : 'Conclua a primeira aula para começar a revisão.'); });
+    document.getElementById('mentorCurrent').addEventListener('click', () => { const n=Number(els.lastLesson.value); addBotMessage(n ? `Conteúdo liberado até agora: aulas 1 a ${n}. Último assunto: ${lessonTitle(n)}. O quiz não usará conteúdo de aulas posteriores.` : 'Nenhum conteúdo liberado ainda.'); });
+    document.getElementById('mentorReset').addEventListener('click', () => { localStorage.setItem('bestScore','0'); els.bestScore.textContent='0%'; addBotMessage('Melhor nota reiniciada. Seu progresso das aulas foi mantido.'); });
     els.lastLesson.addEventListener('change', updateProgress);
     els.playerLesson.addEventListener('change', updatePlayer);
     document.getElementById('markWatched').addEventListener('click', markCurrentLessonWatched);
-    els.chatInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        handleChat();
-      }
-    });
-
     initLessonSelect();
     initPlayer();
     updateProgress();
